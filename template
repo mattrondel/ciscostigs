@@ -1,0 +1,389 @@
+!
+!					Base Switch Config Dec 2021 
+!
+!===========================aaa commands====================================
+!
+aaa new-model
+aaa session-id common
+aaa author exec default local
+aaa authentication login console local
+!
+aaa common-criteria policy PASSWORD_POLICY
+min-length 15
+upper-case 1
+lower-case 1
+numeric-count 1
+special-case 1
+char-changes 8
+exit
+!=======================Local Admin Accounts=================================
+! ** AAA needs to be configured first **
+! Add approved network admins Until dot1x is implemented
+username mrondel privilege 15 common-criteria-policy
+ PASSWORD_POLICY secret	9 $SECRET-SCRAMBLED-TEXT$
+!
+! Add service accounts
+username svc.nessus privilege 9 common-criteria-policy 
+PASSWORD_POLICY secret 9 $SECRET-SCRAMBLED-TEXT$
+!
+! add glass break group account
+username gb_admin privilege 15 common-criteria-policy
+ PASSWORD_POLICY secret 8 $SECRET-SCRAMBLED-TEXT$
+! OR (PICK ONE)
+username dod_admin privilege 15 common-criteria-policy
+ PASSWORD_POLICY secret 8 $SECRET-SCRAMBLED-TEXT$
+!========================== Layer 2 Vlans  ============================
+name %CNx%
+!
+vlan %MGMT_VLAN%
+!
+%DATA_VLAN%
+!
+%VOIP_VLAN%
+!
+%TRANING VLAN%
+!
+%PRINTER_VLAN%
+!
+%TACLANE_VLAN%
+!
+%EXTRA_VLAN1%
+!
+%EXTRA_VLAN2%
+!
+%EXTRA_VLAN3%
+!
+%EXTRA_VLAN4%
+!
+%EXTRA_VLAN5%
+!
+%PARKED VLAN TYPICALLY 999%
+!
+Vlan %NATIVE_VLAN%
+name NATIVE
+state suspend
+!
+vlan %DISABLE_VLAN%
+name DISABLED
+shutdown
+!
+!======================Interface Vlan Commands Layer 3 ============================
+!
+interface Vlan %MGMT_VLAN%
+ description %CNx% Management
+ ip address %MGMT_IP% %MGMT_MASK%
+! ip helper-address A.B.C.D
+ no ip route-cache
+ no ip redirects
+ no ip proxy-arp
+ no ip directed-broadcast
+ no ip mask-reply
+ no ip unreachables
+ no shut
+ exit
+!
+interface GigabitEthernet0/0
+vrf forwarding Mgmt-vrf
+no ip address
+no ip route cache
+negotiation auto
+!
+interface FastEthernet0
+ no ip address
+ shut
+interface Null0
+ no ip unreachables
+interface Vlan1
+ no ip address
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+ no ip route-cache
+ shutdown
+exit
+!
+!
+!=============================IP Commands===================================
+!
+ip domain-name %DOMAIN.COM%
+!
+ip tcp selective-ack
+ip tcp synwait-time 10
+!
+ip sla enable reaction-alerts
+!
+!!!!!%%SET IP DEFAULT GATEWAY!!!!!!!!!!!!!!!!!!
+!!Gateway should be set to the Management GW of the CN or CDN!!
+ip default-gateway %DEFAULT_GATEWAY%
+ip scp server enable
+ip subnet-zero
+no ip source-route
+no file verify auto
+no setup express
+!
+ip igmp snooping
+! Ip dhcp snooping commands (preform the trust command first for access/trunk ports found in those sections)
+ip dhcp snooping
+ip dhcp snooping vlan 2,3,4,etc
+!ip arp inspection vlan 
+!ip http max-connections 2
+ip options ignore
+ip options drop
+!
+!
+!========================== Clock =========================
+!
+clock timezone ZULU 0 0
+!
+!========================== Multicast =========================
+!
+! TBD
+! Globallly
+IP Multicast-routing
+!
+! Per Vlan interface as needed
+ip pim spare-dense-mode
+!
+! =============== NTP ====================
+!
+no ntp
+!
+!if NTP is Present
+ntp server 1.2.3.4
+ntp authentication-key 1 md5 "key from server"
+ntp authenticate
+ntp trusted-key 1
+!
+!
+!==========================Logging Commands===============================
+!
+login block-for 900 attempts 3 within 120
+!
+logging userinfo
+login on-failure log every 1
+login on-success log every 1
+logging history size 100
+logging host x.x.x.x
+!
+logging buffered 8192 informational
+no logging console
+no logging monitor
+logging on
+logging trap informational
+!
+archive
+ log config
+  logging enable
+exit
+!======================Service Commands==================================
+no service pad
+service tcp-keepalives-in
+service tcp-keepalives-out
+service sequence-numbers
+service timestamps debug datetime msec show-timezone
+service timestamps log datetime msec show-timezone
+service password-encryption
+service compress-config
+service sequence-numbers
+ip cef 
+udld enable
+!
+service timestamps debug datetime msec
+service timestamps log datetime localtime
+!======================Disable Commands====================================
+no boot network
+no ip boot server
+no ip bootp server
+no ip dns server
+no ip finger
+no ip identd
+no ip http server
+no ip http secure-server
+no ip rcmd rcp-enable
+no ip rcmd rsh-enable
+no service config
+no service finger
+no service tcp-small-servers
+no service udp-small-servers
+no service pad
+no call-home
+no cns config initial
+no cns exec
+no cns image
+no ip domain-lookup
+no ip source-route
+no ip gratuitous-arps
+ip dhcp bootp ignore
+no cdp run
+no lldp run
+!
+ip http timeout-policy idle 600 life 300 requests 5
+
+!====================Global Commands======================================
+hostname %HOSTNAME%
+!
+!SET VTP PARAMETERS!
+vtp domain %DOMAINNAME%
+vtp mode transparent
+vtp mode off
+!
+qos queue-softmax-multiplier 100
+no vstack
+mac address-table notification change interval 0
+mac address-table notification change
+system mtu routing 1500
+password encryption aes
+!
+hw-switch switch 1 logging onboard message level 3
+!
+login block-for 900 attemps 3 within 120
+!
+! Spanning Tree Commands
+spanning-tree mode rapid-pvst
+spanning-tree loopguard default
+spanning-tree portfast bpduguard default
+spanning-tree extend system-id
+! no spanning-tree optimize bpdu transmission
+!
+!ssh server session-limit N
+!
+boot-start-marker
+boot-end-marker
+!
+!mls qos
+!
+
+
+!spanning-tree etherchannel guard misconfig
+!
+!
+!
+!===========================ssh commands==================================
+!
+crypto key zeroize rsa
+yes
+crypto key generate rsa gen modulus 2048
+!
+no ip ssh version 1
+ip ssh time-out 60
+ip ssh version 2
+ip ssh authentication-retries 3
+!
+!
+ip ssh server algorithm encryption aes256-ctr aes192-ctr aes128-ctr 
+ip ssh server algorithm mac hmac-sha2-512 hmac-sha2-256
+!
+=======================Switchport Commands=================================
+!
+interface range gi1/0/1-36, te1/0/37-48, int te1/1/2-8
+switchport mode access
+switchport access vlan %PARKED VLAN ID%
+switchport block unicast
+spanning-tree portfast
+spanning-tree bpduguard enable
+spanning-tree guard root
+storm-control unicast bps 62000000
+storm-control broadcast bps 20000000
+ip verify source
+! All port not in use need:
+! shutdown
+! switchport access vlan %parked vlan number%
+!use 
+! Access ports with DHCP servers need this command:
+! ip dhcp snooping trust
+====================Switchport Trunk Commands============================
+int te1/1/1
+switchport mode trunk
+switchport trunk allowed vlan 2,3,4,etc
+switchport nonegotiate
+switchport trunk native vlan 4094
+! Do show interfaces trunk and verify vlan 1 is not the native vlan
+! Trunk ports with DHCP servers need this command:
+! ip dhcp snooping trust
+==================== Sample Access Lists ============================
+!      Keep it in scope of just the network(s) one to block inbound and another to restrict mgmt traffic
+!example:
+ip access-list extended BLOCK_INBOUND
+10 deny icmp any any log-input
+!
+ip access-list extended MGMT_NET
+10 permit ip 192.168.1.1 0.0.0.255 any
+20 deny ip any any log
+!===========================Banner commands=================================
+!
+!  PASTE FROM THE STIG ENDING AT WHERE THE BELOW TEXT STARTS A NEW LINE
+^
+banner login ^
+******************************************************************************
+You are accessing a U.S. Government (USG) Information System (IS) that is
+provided for USG-authorized use only.
+
+By using this IS (which includes any device attached to this IS), you 
+consent to the following conditions:
+
+-The USG routinely intercepts and monitors communications on this IS for 
+purposes including, but not limited to, penetration testing, COMSEC 
+monitoring, network operations and defense, personnel misconduct (PM), 
+law enforcement (LE), and counterintelligence (CI) investigations.
+
+-At any time, the USG may inspect and seize data stored on this IS.
+
+-Communications using, or data stored on, this IS are not private, are 
+subject to routine monitoring, interception, and search, and may be 
+disclosed or used for any USG-authorized purpose.
+
+-This IS includes security measures (e.g., authentication and access 
+controls) to protect USG interests--not for your personal benefit or privacy.
+
+-Notwithstanding the above, using this IS does not constitute consent 
+to PM, LE or CI investigative searching or monitoring of the content 
+of privileged communications, or work product, related to personal 
+representation or services by attorneys, psychotherapists, or clergy, 
+and their assistants. Such communications and work product are 
+private and confidential. See User Agreement for details.
+******************************************************************************
+!=======================VTY and console commands==========================
+!
+line aux 0
+no exec
+transport input none
+!
+line con 0
+ login authentication console
+ session-timeout 30
+ exec-timeout 10 0
+ timeout login response 300
+ privilege level 0
+ password 7 XXXXXXXXX
+ logging synchronous
+ stopbits 1
+exit
+!
+! suggested only have VTY lines 0 3 and other lines transport input none
+!
+line vty 0 4
+ exec-timeout 10 0
+ session-timeout 30
+ timeout login response 300
+ privilege level 0
+ password 7 XXXXXXXXXX
+ logging synchronous
+ session-limit 2
+ transport input ssh
+ transport output ssh
+!
+line vty 5 15
+ timeout login response 300
+ exec-timeout 10 0
+ privilege level 0
+ password 7 XXXXXXXXXX
+ logging synchronous
+ transport input none
+!
+line vty 16 31
+ timeout login response 300
+ exec-timeout 10 0
+ privilege level 0
+ password 7 XXXXXXXXXX
+ logging synchronous
+ transport input none
