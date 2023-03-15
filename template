@@ -291,6 +291,7 @@ ip verify source
 !use 
 ! Access ports with DHCP servers need this command:
 ! ip dhcp snooping trust
+! DHCP snooping feature determines whether traffic sources are trusted or untrusted
 ====================Switchport Trunk Commands============================
 int te1/1/1
 switchport mode trunk
